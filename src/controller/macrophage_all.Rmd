@@ -1,6 +1,8 @@
 ---
 title: "macrophage_analysis"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r warning=FALSE, error=FALSE, message=FALSE, echo=FALSE, comment=NA}
@@ -15,14 +17,17 @@ library(RColorBrewer)
 library(reshape2)
 library(grid)
 library(gridExtra)
+```
 
+
+```{r fig.width=22, fig.height=25, warning=FALSE, error=FALSE, message=FALSE, echo=FALSE, comment=NA}
 #### set repository directory ####
 ## set baseDir if Knitting with RStudio button
-# baseDir <- "/single_cell_macrophage/"
+baseDir <- "/Users/xuqiantan/Desktop/Su Lab/single_cell_macrophage/"
 
 ## sets path if run from runAnalysis.R
-currentFile <- rstudioapi::getActiveDocumentContext()$path
-baseDir <- gsub("single_cell_macrophage/.*", "single_cell_macrophage/", currentFile)
+#currentFile <- rstudioapi::getActiveDocumentContext()$path
+#baseDir <- gsub("single_cell_macrophage/.*", "single_cell_macrophage/", currentFile)
 
 #### source function scripts ####
 funcDir <- paste(baseDir, "src/functions/", sep="")
@@ -34,17 +39,26 @@ funcFiles <- paste(funcDir, funcFiles, sep="")
 for(file in funcFiles){
   source(file)
 }
+```
 
+
+```{r fig.width=22, fig.height=25, warning=FALSE, error=FALSE, message=FALSE, echo=FALSE, comment=NA}
 ## load data
 ctTable <- loadData()
+```
 
+
+```{r fig.width=22, fig.height=25, warning=FALSE, error=FALSE, message=FALSE, echo=FALSE, comment=NA}
 ## norm all data
 ctNorm <- cleanCt(ctTable, 
                   summaryOutput=T, 
                   cumExpCutoff=F, 
                   cumHist=F, 
                   normGene="none")
+```
 
+
+```{r fig.width=22, fig.height=25, warning=FALSE, error=FALSE, message=FALSE, echo=FALSE, comment=NA}
 ## cluster and filter
 ctClust <- clusterFilter(ctNorm, 
                          testK = T, 
@@ -67,7 +81,10 @@ ctClust <- clusterFilter(ctNorm,
 #                           heatmapTissueLabel = "human samples", 
 #                           fisherTests = c("mouse", "probe", "tissue", "age"),
 #                           cumulativeExpHist = T, filterClusters = F, clustersToRemove = NULL)
+```
 
+
+```{r fig.width=22, fig.height=25, warning=FALSE, error=FALSE, message=FALSE, echo=FALSE, comment=NA}
 #### violins ####
 violinPlot(ctGenes=ctClust, 
            byFactor="kmeans.cluster", 

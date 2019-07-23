@@ -1,0 +1,135 @@
+---
+title: "t-sne_cluster"
+author: "Xuqian Tan"
+date: "7/12/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r fig.width=22, fig.height=25, warning=FALSE, error=FALSE, message=FALSE, echo=FALSE, comment=NA}
+#### load packages ####
+library(plyr)
+library(ggplot2)
+library(RColorBrewer)
+library(reshape2)
+library(grid)
+library(gridExtra)
+library(Rtsne)
+```
+
+
+```{r fig.width=22, fig.height=25, warning=FALSE, error=FALSE, message=FALSE, echo=FALSE, comment=NA}
+#### set repository directory ####
+## set baseDir if Knitting with RStudio button
+baseDir <- "/Users/xuqiantan/Desktop/Su Lab/single_cell_macrophage/"
+
+## sets path if run from runAnalysis.R
+#currentFile <- rstudioapi::getActiveDocumentContext()$path
+#baseDir <- gsub("single_cell_macrophage/.*", "single_cell_macrophage/", currentFile)
+
+#### source function scripts ####
+funcDir <- paste(baseDir, "src/functions/", sep="")
+funcFiles <- c("loadData.R",
+               "cleanCt.R",
+               "clusterFilter.R",
+               "violinPlot.R")
+funcFiles <- paste(funcDir, funcFiles, sep="")
+for(file in funcFiles){
+  source(file)
+}
+```
+
+```{r fig.width=22, fig.height=25, warning=FALSE, error=FALSE, message=FALSE, echo=FALSE, comment=NA}
+## load data
+ctTable <- loadData()
+```
+
+
+```{r fig.width=22, fig.height=25, warning=FALSE, error=FALSE, message=FALSE, echo=FALSE, comment=NA}
+## norm all data
+ctNorm <- cleanCt(ctTable, 
+                  summaryOutput=T, 
+                  cumExpCutoff=F, 
+                  cumHist=F, 
+                  normGene="none")
+```
+
+```{r}
+# Prepare dataframe for t-sne
+ctsub <- subset(ctNorm, select=-c(mouse, plateID))
+ctInvert <- data.frame(t(ctsub[-1]))
+colnames(ctInvert) <- ctsub[, 1]
+```
+
+```{r}
+set.seed(1)
+tsne <- Rtsne(ctInvert, perplexity=15)
+# visualizing
+plot(tsne$Y, main="tSNE", xlab="tSNE dimension 1", ylab="tSNE dimension 2", asp = 1, pch = 20, col = "blue")
+```
+
+```{r}
+library(Seurat)
+```
+
+```{r}
+ctdata <- CreateSeuratObject(counts = ctInvert)
+ctdata
+```
+
+```{r}
+#ctdata <- NormalizeData(ctdata)
+```
+
+```{r}
+ctdata <- FindVariableFeatures(ctdata)
+
+# Identify the 10 most highly variable genes
+top10 <- head(VariableFeatures(ctdata), 10)
+
+# plot variable features with and without labels
+plot1 <- VariableFeaturePlot(ctdata)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+CombinePlots(plots = list(plot1, plot2))
+```
+
+
+```{r}
+ctdata <- ScaleData(ctdata)
+ctdata <- RunPCA(ctdata, verbose = FALSE)
+VizDimLoadings(ctdata, dims = 1:2, reduction = "pca")
+```
+
+
+```{r}
+DimPlot(ctdata)
+```
+
+```{r}
+ctdata <- JackStraw(object = ctdata,num.replicate = 100, dim = 20)
+ctdata <- ScoreJackStraw(ctdata, dim = 1:20)
+JackStrawPlot(object = ctdata, dims = 1:20)
+ElbowPlot(ctdata, ndims = 20)
+```
+
+
+```{r}
+ctdata <- FindNeighbors(ctdata, dims = 1:20)
+ctdata <- FindClusters(ctdata, resolution = 0.5)
+ctdata <- RunTSNE(ctdata, dims = 1:2, reduction.name = "pca")
+```
+
+```{r}
+DimPlot(ctdata, label = TRUE)
+```
+
+
+
+```{r}
+markers = FindAllMarkers(ctdata)
+```
+
+
